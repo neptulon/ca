@@ -25,6 +25,16 @@ func GenCA() (cert, key []byte, err error) {
 	return nil, nil, nil
 }
 
+// GenSigningCert generates an intermediate signing certificate for signing server or client certificates.
+func GenSigningCert() {
+
+}
+
+// GenServerCert generates a hosting certificate for servers using TLS.
+func GenServerCert() {
+
+}
+
 // GenClientCert generates a client certificate signed by the provided signing certificate.
 // Generated certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
 func GenClientCert(signCert *x509.Certificate, signKey *rsa.PrivateKey) (cert, key []byte, err error) {
