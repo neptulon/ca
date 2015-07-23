@@ -19,24 +19,28 @@ import (
 	"time"
 )
 
-// GenCA generates a self-signed CA certificate and returns the PEM encoded X.509 certificate and private key pair.
-// Note: while writing the binary cert/key pair to file system, it is useful to use standard naming like: 'cert.pem', 'key.pem'.
+// GenCA generates a self-signed CA certificate.
+// Returns PEM encoded X.509 certificate and private key pair.
+// Note: While writing the binary cert/key pair to file system, it is useful to use standard naming like: 'cert.pem', 'key.pem'.
 func GenCA() (cert, key []byte, err error) {
 	return nil, nil, nil
 }
 
 // GenSigningCert generates an intermediate signing certificate for signing server or client certificates.
+// Returns PEM encoded X.509 certificate and private key pair.
 func GenSigningCert() {
 
 }
 
 // GenServerCert generates a hosting certificate for servers using TLS.
+// Returns PEM encoded X.509 certificate and private key pair.
 func GenServerCert() {
 
 }
 
 // GenClientCert generates a client certificate signed by the provided signing certificate.
 // Generated certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
+// Returns PEM encoded X.509 certificate and private key pair.
 func GenClientCert(signCert *x509.Certificate, signKey *rsa.PrivateKey) (cert, key []byte, err error) {
 	return nil, nil, nil
 }
