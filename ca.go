@@ -1,6 +1,9 @@
 // Package ca provides easy to use certificate authority related functions.
 // This is a lightweight wrapper around "crypto/x509" package for
 // creating CA certs, client certs, signing requests, and more.
+//
+// This package is mostly based on the example code provided at:
+// http://golang.org/src/crypto/tls/generate_cert.go
 package ca
 
 import (
@@ -15,6 +18,12 @@ import (
 	"strings"
 	"time"
 )
+
+// GenCA generates a self-signed CA certificate and returns the PEM encoded X.509 certificate and private key pair.
+// Note: while writing the binary cert/key pair to file system, it is useful to use standard naming like: 'cert.pem', 'key.pem'.
+func GenCA() (cert, key []byte, err error) {
+	return nil, nil, nil
+}
 
 // genCert generates a PEM encoded X.509 certificate and private key pair (i.e. 'cert.pem', 'key.pem').
 // This code is based on the sample from http://golang.org/src/crypto/tls/generate_cert.go (taken at Jan 30, 2015).

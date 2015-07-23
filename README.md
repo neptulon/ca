@@ -17,10 +17,10 @@ Example
 
 ```go
 // generate a new CA cert as PEM encoded X.509 cert and private key pair
-caCert, caKey, _ = ca.GenCert("localhost", 0, 2048, "localhost", "myorganizqtion")
+cert, key, _ = ca.GenCert("localhost", 0, 2048, "localhost", "myorganizqtion")
 
 // create a new TLS listener with created cert
-tlsCert, err := tls.X509KeyPair(caCert, caKey)
+tlsCert, err := tls.X509KeyPair(cert, key)
 pool := x509.NewCertPool()
 pool.AppendCertsFromPEM(cert)
 
@@ -31,5 +31,5 @@ conf := tls.Config{
 }
 
 l, err := tls.Listen("tcp", "localhost", &conf)
-// do 'err != nil' check then start accepting connections on listener
+// do 'err != nil' checks then start accepting connections on listener
 ```
