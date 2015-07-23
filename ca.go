@@ -25,6 +25,12 @@ func GenCA() (cert, key []byte, err error) {
 	return nil, nil, nil
 }
 
+// GenClientCert generates a client certificate signed by the provided signing certificate.
+// Generated certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
+func GenClientCert(signCert *x509.Certificate, signKey *rsa.PrivateKey) (cert, key []byte, err error) {
+	return nil, nil, nil
+}
+
 // genCert generates a PEM encoded X.509 certificate and private key pair (i.e. 'cert.pem', 'key.pem').
 // This code is based on the sample from http://golang.org/src/crypto/tls/generate_cert.go (taken at Jan 30, 2015).
 // If no private key is provided, the certificate is marked as self-signed CA.

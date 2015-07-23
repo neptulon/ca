@@ -31,5 +31,6 @@ conf := tls.Config{
 }
 
 l, err := tls.Listen("tcp", "localhost", &conf)
-// do 'err != nil' checks then start accepting connections on listener
+
+// todo: add 'err != nil' checks and start accepting connections on listener
 ```
