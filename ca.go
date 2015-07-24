@@ -126,9 +126,9 @@ func genCert(host string, validFor time.Duration, ca *x509.Certificate, caPriv *
 		signerPriv = caPriv
 	}
 
-	derBytes, err := x509.CreateCertificate(rand.Reader, cert, signerCert, privKey.PublicKey, signerPriv)
+	derBytes, err := x509.CreateCertificate(rand.Reader, cert, signerCert, &privKey.PublicKey, signerPriv)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create certificate: %v", err)
+		return nil, nil, err
 	}
 
 	pemBytes = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
