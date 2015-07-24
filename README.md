@@ -3,7 +3,7 @@ Go CA
 
 [![Build Status](https://travis-ci.org/nbusy/ca.svg?branch=master)](https://travis-ci.org/nbusy/ca) [![GoDoc](https://godoc.org/github.com/nbusy/ca?status.svg)](https://godoc.org/github.com/nbusy/ca)
 
-Go certificate authority library can create:
+Go certificate authority library for creating:
 
 -	CA certificates
 -	Intermediate signing certificates
