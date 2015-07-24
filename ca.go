@@ -28,14 +28,14 @@ func GenCA() (cert, key []byte, err error) {
 
 // GenSigningCert generates an intermediate signing certificate for signing server or client certificates.
 // Returns PEM encoded X.509 certificate and private key pair.
-func GenSigningCert() {
-
+func GenSigningCert() (cert, key []byte, err error) {
+	return nil, nil, nil
 }
 
 // GenServerCert generates a hosting certificate for servers using TLS.
 // Returns PEM encoded X.509 certificate and private key pair.
-func GenServerCert() {
-
+func GenServerCert() (cert, key []byte, err error) {
+	return nil, nil, nil
 }
 
 // GenClientCert generates a client certificate signed by the provided signing certificate.
