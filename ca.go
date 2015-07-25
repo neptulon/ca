@@ -20,16 +20,10 @@ import (
 )
 
 // GenCA generates a self-signed CA certificate.
-//
-// validFor = Validity period for the certificate.
-// keyLength = Key length for the new certificate.
-// cn, org = Common name and organization fields of the certificate.
-//
 // Returns PEM encoded X.509 certificate and private key pair.
-//
 // Note: While writing the binary cert/key pair to file system, it is useful to use standard naming like: 'cert.pem', 'key.pem'.
-func GenCA(subject pkix.Name, validFor time.Duration, keyLength int, cn, org string) (cert, key []byte, err error) {
-	c, p, err := getBaseCert(subject, validFor, keyLength, cn, org)
+func GenCA(subject pkix.Name, validFor time.Duration, keyLength int) (cert, key []byte, err error) {
+	c, p, err := getBaseCert(subject, validFor, keyLength)
 	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 	c.BasicConstraintsValid = true
 	c.IsCA = true
@@ -40,40 +34,40 @@ func GenCA(subject pkix.Name, validFor time.Duration, keyLength int, cn, org str
 
 // GenSigningCert generates an intermediate signing certificate for signing server or client certificates.
 // Returns PEM encoded X.509 certificate and private key pair.
-func GenSigningCert(subject pkix.Name, validFor time.Duration, keyLength int, cn, org string) (cert, key []byte, err error) {
-	c, p, err := getBaseCert(subject, validFor, keyLength, cn, org)
+func GenSigningCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
+	c, p, err := getBaseCert(subject, validFor, keyLength)
 	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 
-	cert, key, err = signAndEncodeCert(c, p, c, p)
+	cert, key, err = signAndEncodeCert(signingCert, signingKey, c, p)
 	return
 }
 
 // GenServerCert generates a hosting certificate for servers using TLS.
 // Returns PEM encoded X.509 certificate and private key pair.
-func GenServerCert(subject pkix.Name, host string, validFor time.Duration, keyLength int, cn, org string) (cert, key []byte, err error) {
-	c, p, err := getBaseCert(subject, validFor, keyLength, cn, org)
+func GenServerCert(subject pkix.Name, host string, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
+	c, p, err := getBaseCert(subject, validFor, keyLength)
 	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign
 	c.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
 	setHosts(host, c)
 
-	cert, key, err = signAndEncodeCert(c, p, c, p)
+	cert, key, err = signAndEncodeCert(signingCert, signingKey, c, p)
 	return
 }
 
 // GenClientCert generates a client certificate signed by the provided signing certificate.
 // Generated certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
 // Returns PEM encoded X.509 certificate and private key pair.
-func GenClientCert(subject pkix.Name, validFor time.Duration, keyLength int, cn, org string) (cert, key []byte, err error) {
-	c, p, err := getBaseCert(subject, validFor, keyLength, cn, org)
+func GenClientCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
+	c, p, err := getBaseCert(subject, validFor, keyLength)
 	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
 	c.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
 
-	cert, key, err = signAndEncodeCert(c, p, c, p)
+	cert, key, err = signAndEncodeCert(signingCert, signingKey, c, p)
 	return
 }
 
 // getBaseCert creates and returns x509.Certificate (unsigned) and rsa.PrivateKey objects with basic paramters set.
-func getBaseCert(subject pkix.Name, validFor time.Duration, keyLength int, cn, org string) (*x509.Certificate, *rsa.PrivateKey, error) {
+func getBaseCert(subject pkix.Name, validFor time.Duration, keyLength int) (*x509.Certificate, *rsa.PrivateKey, error) {
 	privKey, err := rsa.GenerateKey(rand.Reader, keyLength)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate certificate private key using RSA: %v", err)
