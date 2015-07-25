@@ -21,8 +21,8 @@ import (
 
 // GenCA generates a self-signed CA certificate.
 //
-// validFor = Validity period for the certificate. Defaults to time.Duration max (290 years).
-// keyLength = Key length for the new certificate. Defaults to 3248 bits RSA key.
+// validFor = Validity period for the certificate.
+// keyLength = Key length for the new certificate.
 // cn, org = Common name and organization fields of the certificate.
 //
 // Returns PEM encoded X.509 certificate and private key pair.
@@ -31,16 +31,9 @@ import (
 func GenCA(validFor time.Duration, keyLength int, cn, org string) (cert, key []byte, err error) {
 	c, p, err := getBaseCert(validFor, keyLength, cn, org)
 	c.IsCA = true
-	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign
-	c.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
+	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 
-	certDerBytes, err := x509.CreateCertificate(rand.Reader, c, c, &p.PublicKey, p)
-	if err != nil {
-		return
-	}
-
-	cert = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDerBytes})
-	key = pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(p)})
+	cert, key, err = signAndEncodeCert(c, p, c, p)
 	return
 }
 
@@ -65,25 +58,17 @@ func GenClientCert(signCert *x509.Certificate, signKey *rsa.PrivateKey) (cert, k
 
 // getBaseCert creates and returns x509.Certificate (unsigned) and rsa.PrivateKey objects with basic paramters set.
 func getBaseCert(validFor time.Duration, keyLength int, cn, org string) (*x509.Certificate, *rsa.PrivateKey, error) {
-	if keyLength == 0 {
-		keyLength = 3248
-	}
-
 	privKey, err := rsa.GenerateKey(rand.Reader, keyLength)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate certificate private key using RSA: %v", err)
 	}
 
 	notBefore := time.Now()
-	notAfter := notBefore.Add(290 * 365 * 24 * time.Hour) //290 years
+	notAfter := notBefore.Add(validFor)
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate the certificate serial number: %v", err)
-	}
-
-	if validFor != 0 {
-		notAfter = notBefore.Add(validFor)
 	}
 
 	cert := x509.Certificate{
