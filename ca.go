@@ -30,8 +30,9 @@ import (
 // Note: While writing the binary cert/key pair to file system, it is useful to use standard naming like: 'cert.pem', 'key.pem'.
 func GenCA(validFor time.Duration, keyLength int, cn, org string) (cert, key []byte, err error) {
 	c, p, err := getBaseCert(validFor, keyLength, cn, org)
-	c.IsCA = true
 	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+	c.BasicConstraintsValid = true
+	c.IsCA = true
 
 	cert, key, err = signAndEncodeCert(c, p, c, p)
 	return
@@ -39,21 +40,34 @@ func GenCA(validFor time.Duration, keyLength int, cn, org string) (cert, key []b
 
 // GenSigningCert generates an intermediate signing certificate for signing server or client certificates.
 // Returns PEM encoded X.509 certificate and private key pair.
-func GenSigningCert() (cert, key []byte, err error) {
-	return nil, nil, nil
+func GenSigningCert(validFor time.Duration, keyLength int, cn, org string) (cert, key []byte, err error) {
+	c, p, err := getBaseCert(validFor, keyLength, cn, org)
+	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+
+	cert, key, err = signAndEncodeCert(c, p, c, p)
+	return
 }
 
 // GenServerCert generates a hosting certificate for servers using TLS.
 // Returns PEM encoded X.509 certificate and private key pair.
-func GenServerCert() (cert, key []byte, err error) {
-	return nil, nil, nil
+func GenServerCert(host string, validFor time.Duration, keyLength int, cn, org string) (cert, key []byte, err error) {
+	c, p, err := getBaseCert(validFor, keyLength, cn, org)
+	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+	setHosts(host, c)
+
+	cert, key, err = signAndEncodeCert(c, p, c, p)
+	return
 }
 
 // GenClientCert generates a client certificate signed by the provided signing certificate.
 // Generated certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
 // Returns PEM encoded X.509 certificate and private key pair.
-func GenClientCert(signCert *x509.Certificate, signKey *rsa.PrivateKey) (cert, key []byte, err error) {
-	return nil, nil, nil
+func GenClientCert(validFor time.Duration, keyLength int, cn, org string) (cert, key []byte, err error) {
+	c, p, err := getBaseCert(validFor, keyLength, cn, org)
+	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+
+	cert, key, err = signAndEncodeCert(c, p, c, p)
+	return
 }
 
 // getBaseCert creates and returns x509.Certificate (unsigned) and rsa.PrivateKey objects with basic paramters set.
@@ -72,8 +86,7 @@ func getBaseCert(validFor time.Duration, keyLength int, cn, org string) (*x509.C
 	}
 
 	cert := x509.Certificate{
-		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
+		SerialNumber: serialNumber,
 		Subject: pkix.Name{
 			CommonName:   cn,
 			Organization: []string{org},
