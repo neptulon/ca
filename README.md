@@ -16,18 +16,22 @@ Example
 -------
 
 ```go
-// generate a new CA cert as PEM encoded X.509 cert and private key pair
-cert, key, _ = ca.GenCert("localhost", 0, 2048, "localhost", "myorganizqtion")
+// create CA and server certificates
+caCert, caKey, err = ca.CreateCACert(pkix.Name{
+	CommonName: "FooBar Root CA",
+}, time.Hour, 2048)
 
-// create a new TLS listener with created cert
-tlsCert, err := tls.X509KeyPair(cert, key)
-pool := x509.NewCertPool()
-pool.AppendCertsFromPEM(cert)
+svrCert, svrKey, err := CreateServerCert(pkix.Name{
+	Country:      []string{"SE"},
+	Organization: []string{"FooBar"},
+	CommonName:   "127.0.0.1",
+}, "127.0.0.1", time.Hour, 2048, caCert, caKey)
+
+// create a new TLS listener with created server certificate
+tlsCert, err := tls.X509KeyPair(svrCert, svrKey)
 
 conf := tls.Config{
 	Certificates: []tls.Certificate{tlsCert},
-	ClientCAs:    pool,
-	ClientAuth:   tls.VerifyClientCertIfGiven,
 }
 
 l, err := tls.Listen("tcp", "localhost", &conf)
