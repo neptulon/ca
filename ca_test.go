@@ -17,6 +17,17 @@ func TestGenCertChain(t *testing.T) {
 	if caCert == nil || caKey == nil || err != nil {
 		t.Fatal(err)
 	}
+
+	signingCert, signingKey, err := GenSigningCert(pkix.Name{
+		Country:            []string{"SE"},
+		Organization:       []string{"FooBar"},
+		OrganizationalUnit: []string{"FooBar Certificate Authority"},
+		CommonName:         "FooBar Root CA",
+	}, time.Hour, 512, caCert, caKey)
+
+	if signingCert == nil || signingKey == nil || err != nil {
+		t.Fatal(err)
+	}
 }
 
 // func TestGenCert(t *testing.T) {

@@ -13,6 +13,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"math/big"
 	"net"
 	"strings"
@@ -34,11 +35,24 @@ func GenCA(subject pkix.Name, validFor time.Duration, keyLength int) (cert, key 
 
 // GenSigningCert generates an intermediate signing certificate for signing server or client certificates.
 // Returns PEM encoded X.509 certificate and private key pair.
-func GenSigningCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
-	c, p, err := getBaseCert(subject, validFor, keyLength)
+func GenSigningCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
+	var (
+		sc, c *x509.Certificate
+		sk, k *rsa.PrivateKey
+	)
+
+	if sc, sk, err = parseCertAndKey(signingCert, signingKey); err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	if c, k, err = getBaseCert(subject, validFor, keyLength); err != nil {
+		return
+	}
+
 	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 
-	cert, key, err = signAndEncodeCert(signingCert, signingKey, c, p)
+	cert, key, err = signAndEncodeCert(sc, sk, c, k)
 	return
 }
 
@@ -101,6 +115,23 @@ func setHosts(host string, cert *x509.Certificate) {
 			cert.DNSNames = append(cert.DNSNames, h)
 		}
 	}
+}
+
+// Parses PEM encoded X.509 certificate and private key pair into x509.Certificate and rsa.PrivateKey objects.
+func parseCertAndKey(cert, key []byte) (c *x509.Certificate, k *rsa.PrivateKey, err error) {
+	pc, _ := pem.Decode(cert)
+	if c, err = x509.ParseCertificate(pc.Bytes); err != nil {
+		err = fmt.Errorf("Failed to parse private key with error: %v", err)
+		return
+	}
+
+	pk, _ := pem.Decode(key)
+	if k, err = x509.ParsePKCS1PrivateKey(pk.Bytes); err != nil {
+		err = fmt.Errorf("Failed to parse certificate with error: %v", err)
+		return
+	}
+
+	return
 }
 
 // signAndEncodeCert signs a given certificate with given signing cert/key pair and encodes resulting signed cert and private key in PEM format and returns.
