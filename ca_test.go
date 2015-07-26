@@ -29,6 +29,16 @@ func TestCreateCertChain(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	svrCert, svrKey, err := CreateServerCert(pkix.Name{
+		Country:      []string{"SE"},
+		Organization: []string{"FooBar"},
+		CommonName:   "127.0.0.1",
+	}, "127.0.0.1", time.Hour, 512, signingCert, signingKey)
+
+	if svrCert == nil || svrKey == nil || err != nil {
+		t.Fatal(err)
+	}
+
 	// todo: add hosting and all leaf certs and create tls listener and connect with client cert
 }
 

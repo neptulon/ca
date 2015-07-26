@@ -61,25 +61,49 @@ func CreateSigningCert(subject pkix.Name, validFor time.Duration, keyLength int,
 
 // CreateServerCert creates a hosting certificate for servers using TLS.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
-func CreateServerCert(subject pkix.Name, host string, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
-	c, p, err := createBaseCert(subject, validFor, keyLength)
+func CreateServerCert(subject pkix.Name, host string, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
+	var (
+		sc, c *x509.Certificate
+		sk, k *rsa.PrivateKey
+	)
+
+	if sc, sk, err = parseCertAndKey(signingCert, signingKey); err != nil {
+		return
+	}
+
+	if c, k, err = createBaseCert(subject, validFor, keyLength); err != nil {
+		return
+	}
+
 	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
 	c.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
 	setHosts(host, c)
 
-	cert, key, err = signAndEncodeCert(signingCert, signingKey, c, p)
+	cert, key, err = signAndEncodeCert(sc, sk, c, k)
 	return
 }
 
 // CreateClientCert creates a client certificate signed by the provided signing certificate.
 // Created certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
-func CreateClientCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
-	c, p, err := createBaseCert(subject, validFor, keyLength)
+func CreateClientCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
+	var (
+		sc, c *x509.Certificate
+		sk, k *rsa.PrivateKey
+	)
+
+	if sc, sk, err = parseCertAndKey(signingCert, signingKey); err != nil {
+		return
+	}
+
+	if c, k, err = createBaseCert(subject, validFor, keyLength); err != nil {
+		return
+	}
+
 	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
 	c.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
 
-	cert, key, err = signAndEncodeCert(signingCert, signingKey, c, p)
+	cert, key, err = signAndEncodeCert(sc, sk, c, k)
 	return
 }
 
