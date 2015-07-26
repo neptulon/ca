@@ -29,7 +29,7 @@ import (
 // The created certificate can be used for signing other certificates and CRLs.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
 func CreateCACert(subject pkix.Name, validFor time.Duration, keyLength int) (cert, key []byte, err error) {
-	c, p, err := getBaseCert(subject, validFor, keyLength)
+	c, p, err := createBaseCert(subject, validFor, keyLength)
 	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 	c.BasicConstraintsValid = true
 	c.IsCA = true
@@ -38,9 +38,9 @@ func CreateCACert(subject pkix.Name, validFor time.Duration, keyLength int) (cer
 	return
 }
 
-// GenSigningCert generates an intermediate signing certificate for signing server or client certificates.
+// CreateSigningCert creates an intermediate signing certificate for signing server or client certificates.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
-func GenSigningCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
+func CreateSigningCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
 	var (
 		sc, c *x509.Certificate
 		sk, k *rsa.PrivateKey
@@ -51,7 +51,7 @@ func GenSigningCert(subject pkix.Name, validFor time.Duration, keyLength int, si
 		return
 	}
 
-	if c, k, err = getBaseCert(subject, validFor, keyLength); err != nil {
+	if c, k, err = createBaseCert(subject, validFor, keyLength); err != nil {
 		return
 	}
 
@@ -61,11 +61,11 @@ func GenSigningCert(subject pkix.Name, validFor time.Duration, keyLength int, si
 	return
 }
 
-// GenServerCert generates a hosting certificate for servers using TLS.
+// CreateServerCert creates a hosting certificate for servers using TLS.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
-func GenServerCert(subject pkix.Name, host string, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
-	c, p, err := getBaseCert(subject, validFor, keyLength)
-	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign
+func CreateServerCert(subject pkix.Name, host string, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
+	c, p, err := createBaseCert(subject, validFor, keyLength)
+	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
 	c.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
 	setHosts(host, c)
 
@@ -73,11 +73,11 @@ func GenServerCert(subject pkix.Name, host string, validFor time.Duration, keyLe
 	return
 }
 
-// GenClientCert generates a client certificate signed by the provided signing certificate.
-// Generated certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
+// CreateClientCert creates a client certificate signed by the provided signing certificate.
+// Created certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
-func GenClientCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
-	c, p, err := getBaseCert(subject, validFor, keyLength)
+func CreateClientCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
+	c, p, err := createBaseCert(subject, validFor, keyLength)
 	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
 	c.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
 
@@ -85,8 +85,8 @@ func GenClientCert(subject pkix.Name, validFor time.Duration, keyLength int, sig
 	return
 }
 
-// getBaseCert creates and returns x509.Certificate (unsigned) and rsa.PrivateKey objects with basic paramters set.
-func getBaseCert(subject pkix.Name, validFor time.Duration, keyLength int) (*x509.Certificate, *rsa.PrivateKey, error) {
+// createBaseCert creates and returns x509.Certificate (unsigned) and rsa.PrivateKey objects with basic paramters set.
+func createBaseCert(subject pkix.Name, validFor time.Duration, keyLength int) (*x509.Certificate, *rsa.PrivateKey, error) {
 	privKey, err := rsa.GenerateKey(rand.Reader, keyLength)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate certificate private key using RSA: %v", err)

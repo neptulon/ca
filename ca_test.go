@@ -7,7 +7,7 @@ import (
 )
 
 func TestCreateCertChain(t *testing.T) {
-	caCert, caKey, err := GenCA(pkix.Name{
+	caCert, caKey, err := CreateCACert(pkix.Name{
 		Country:            []string{"SE"},
 		Organization:       []string{"FooBar"},
 		OrganizationalUnit: []string{"FooBar Certificate Authority"},
@@ -18,7 +18,7 @@ func TestCreateCertChain(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	signingCert, signingKey, err := GenSigningCert(pkix.Name{
+	signingCert, signingKey, err := CreateSigningCert(pkix.Name{
 		Country:            []string{"SE"},
 		Organization:       []string{"FooBar"},
 		OrganizationalUnit: []string{"FooBar Certificate Authority"},
