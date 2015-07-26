@@ -21,13 +21,15 @@ func TestCreateCertChain(t *testing.T) {
 	signingCert, signingKey, err := CreateSigningCert(pkix.Name{
 		Country:            []string{"SE"},
 		Organization:       []string{"FooBar"},
-		OrganizationalUnit: []string{"FooBar Certificate Authority"},
-		CommonName:         "FooBar Root CA",
+		OrganizationalUnit: []string{"FooBar Intermediate Certificate Authority"},
+		CommonName:         "FooBar Intermadiate CA",
 	}, time.Hour, 512, caCert, caKey)
 
 	if signingCert == nil || signingKey == nil || err != nil {
 		t.Fatal(err)
 	}
+
+	// todo: add hosting and all leaf certs and create tls listener and connect with client cert
 }
 
 // func TestGenCert(t *testing.T) {
