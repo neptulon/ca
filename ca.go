@@ -83,7 +83,7 @@ func CreateServerCert(subject pkix.Name, host string, validFor time.Duration, ke
 	return
 }
 
-// CreateClientCert creates a client certificate signed by the provided signing certificate.
+// CreateClientCert creates a client certificate.
 // Created certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
 func CreateClientCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {

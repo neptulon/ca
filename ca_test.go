@@ -39,6 +39,16 @@ func TestCreateCertChain(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	clientCert, clientKey, err := CreateClientCert(pkix.Name{
+		Country:      []string{"SE"},
+		Organization: []string{"FooBar"},
+		CommonName:   "chuck.norris",
+	}, time.Hour, 512, signingCert, signingKey)
+
+	if clientCert == nil || clientKey == nil || err != nil {
+		t.Fatal(err)
+	}
+
 	// todo: add hosting and all leaf certs and create tls listener and connect with client cert
 }
 
