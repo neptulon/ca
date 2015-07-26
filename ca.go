@@ -30,7 +30,6 @@ import (
 func CreateCACert(subject pkix.Name, validFor time.Duration, keyLength int) (cert, key []byte, err error) {
 	c, p, err := createBaseCert(subject, validFor, keyLength)
 	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
-	c.BasicConstraintsValid = true
 	c.IsCA = true
 
 	cert, key, err = signAndEncodeCert(c, p, c, p)
@@ -54,6 +53,7 @@ func CreateSigningCert(subject pkix.Name, validFor time.Duration, keyLength int,
 	}
 
 	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+	c.IsCA = true
 
 	cert, key, err = signAndEncodeCert(sc, sk, c, k)
 	return
@@ -99,10 +99,11 @@ func createBaseCert(subject pkix.Name, validFor time.Duration, keyLength int) (*
 	}
 
 	cert := x509.Certificate{
-		SerialNumber: serialNumber,
-		Subject:      subject,
-		NotBefore:    notBefore,
-		NotAfter:     notAfter,
+		SerialNumber:          serialNumber,
+		Subject:               subject,
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
+		BasicConstraintsValid: true,
 	}
 
 	return &cert, privKey, nil
