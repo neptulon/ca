@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestGenCertChain(t *testing.T) {
+func TestCreateCertChain(t *testing.T) {
 	caCert, caKey, err := GenCA(pkix.Name{
 		Country:            []string{"SE"},
 		Organization:       []string{"FooBar"},

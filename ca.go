@@ -2,6 +2,11 @@
 // This is a lightweight wrapper around "crypto/x509" package for
 // creating CA certs, client certs, signing requests, and more.
 //
+// Any "cert, key []byte" type of function parameters and return types are
+// always PEM encoded X.509 certificate and private key pairs.
+// You can store the certificate/key pair with standard naming as
+// "cert.pem" and "key.pem" in the file system.
+//
 // This package is mostly based on the example code provided at:
 // http://golang.org/src/crypto/tls/generate_cert.go
 package ca
@@ -20,10 +25,10 @@ import (
 	"time"
 )
 
-// GenCA generates a self-signed CA certificate.
-// Returns PEM encoded X.509 certificate and private key pair.
-// Note: While writing the binary cert/key pair to file system, it is useful to use standard naming like: 'cert.pem', 'key.pem'.
-func GenCA(subject pkix.Name, validFor time.Duration, keyLength int) (cert, key []byte, err error) {
+// CreateCACert creates a self-signed CA certificate.
+// The created certificate can be used for signing other certificates and CRLs.
+// The returned slices are the PEM encoded X.509 certificate and private key pair.
+func CreateCACert(subject pkix.Name, validFor time.Duration, keyLength int) (cert, key []byte, err error) {
 	c, p, err := getBaseCert(subject, validFor, keyLength)
 	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 	c.BasicConstraintsValid = true
@@ -34,7 +39,7 @@ func GenCA(subject pkix.Name, validFor time.Duration, keyLength int) (cert, key 
 }
 
 // GenSigningCert generates an intermediate signing certificate for signing server or client certificates.
-// Returns PEM encoded X.509 certificate and private key pair.
+// The returned slices are the PEM encoded X.509 certificate and private key pair.
 func GenSigningCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
 	var (
 		sc, c *x509.Certificate
@@ -57,7 +62,7 @@ func GenSigningCert(subject pkix.Name, validFor time.Duration, keyLength int, si
 }
 
 // GenServerCert generates a hosting certificate for servers using TLS.
-// Returns PEM encoded X.509 certificate and private key pair.
+// The returned slices are the PEM encoded X.509 certificate and private key pair.
 func GenServerCert(subject pkix.Name, host string, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
 	c, p, err := getBaseCert(subject, validFor, keyLength)
 	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign
@@ -70,7 +75,7 @@ func GenServerCert(subject pkix.Name, host string, validFor time.Duration, keyLe
 
 // GenClientCert generates a client certificate signed by the provided signing certificate.
 // Generated certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
-// Returns PEM encoded X.509 certificate and private key pair.
+// The returned slices are the PEM encoded X.509 certificate and private key pair.
 func GenClientCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert *x509.Certificate, signingKey *rsa.PrivateKey) (cert, key []byte, err error) {
 	c, p, err := getBaseCert(subject, validFor, keyLength)
 	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
