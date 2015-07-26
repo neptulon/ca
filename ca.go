@@ -18,7 +18,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"math/big"
 	"net"
 	"strings"
@@ -47,7 +46,6 @@ func CreateSigningCert(subject pkix.Name, validFor time.Duration, keyLength int,
 	)
 
 	if sc, sk, err = parseCertAndKey(signingCert, signingKey); err != nil {
-		log.Fatal(err)
 		return
 	}
 
