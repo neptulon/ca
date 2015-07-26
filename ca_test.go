@@ -1,10 +1,24 @@
 package ca
 
-// Country: SE
-// Organization: NBusy
-// Organizational Unit: NBusy Certificate authority
-// Common Name: NBusy Root CA
-//
+import (
+	"crypto/x509/pkix"
+	"testing"
+	"time"
+)
+
+func TestGenCertChain(t *testing.T) {
+	caCert, caKey, err := GenCA(pkix.Name{
+		Country:            []string{"SE"},
+		Organization:       []string{"FooBar"},
+		OrganizationalUnit: []string{"FooBar Certificate Authority"},
+		CommonName:         "FooBar Root CA",
+	}, time.Hour, 512)
+
+	if caCert == nil || caKey == nil || err != nil {
+		t.Fatal(err)
+	}
+}
+
 // func TestGenCert(t *testing.T) {
 // 	// keyLength := 0 // used for internal test cert generation
 // 	keyLength := 512
