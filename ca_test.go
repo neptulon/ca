@@ -1,12 +1,15 @@
 package ca
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"crypto/x509/pkix"
 	"testing"
 	"time"
 )
 
 func TestCreateCertChain(t *testing.T) {
+	// create an entire certificate chain
 	caCert, caKey, err := CreateCACert(pkix.Name{
 		Country:            []string{"SE"},
 		Organization:       []string{"FooBar"},
@@ -15,7 +18,7 @@ func TestCreateCertChain(t *testing.T) {
 	}, time.Hour, 512)
 
 	if caCert == nil || caKey == nil || err != nil {
-		t.Fatal(err)
+		t.Fatal("Failed to created CA cert", err)
 	}
 
 	signingCert, signingKey, err := CreateSigningCert(pkix.Name{
@@ -26,7 +29,7 @@ func TestCreateCertChain(t *testing.T) {
 	}, time.Hour, 512, caCert, caKey)
 
 	if signingCert == nil || signingKey == nil || err != nil {
-		t.Fatal(err)
+		t.Fatal("Failed to created signing cert", err)
 	}
 
 	svrCert, svrKey, err := CreateServerCert(pkix.Name{
@@ -36,7 +39,7 @@ func TestCreateCertChain(t *testing.T) {
 	}, "127.0.0.1", time.Hour, 512, signingCert, signingKey)
 
 	if svrCert == nil || svrKey == nil || err != nil {
-		t.Fatal(err)
+		t.Fatal("Failed to created server cert", err)
 	}
 
 	clientCert, clientKey, err := CreateClientCert(pkix.Name{
@@ -46,10 +49,29 @@ func TestCreateCertChain(t *testing.T) {
 	}, time.Hour, 512, signingCert, signingKey)
 
 	if clientCert == nil || clientKey == nil || err != nil {
-		t.Fatal(err)
+		t.Fatal("Failed to created client cert", err)
 	}
 
-	// todo: add hosting and all leaf certs and create tls listener and connect with client cert
+	// add server and all leaf certs and create tls listener and connect with client cert
+	tlsCert, err := tls.X509KeyPair(svrCert, svrKey)
+	pool := x509.NewCertPool()
+	ok := pool.AppendCertsFromPEM(signingCert)
+	if err != nil || !ok {
+		t.Fatalf("failed to parse the certificate or the private key: %v", err)
+	}
+
+	conf := tls.Config{
+		Certificates: []tls.Certificate{tlsCert},
+		ClientCAs:    pool,
+		ClientAuth:   tls.VerifyClientCertIfGiven,
+	}
+
+	l, err := tls.Listen("tcp", "127.0.0.1:3000", &conf)
+	if err != nil {
+		t.Fatalf("failed to create TLS listener on network address %v with error: %v", "127.0.0.1:3000", err)
+	}
+
+	l.Close()
 }
 
 // func TestGenCert(t *testing.T) {
