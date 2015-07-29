@@ -28,10 +28,18 @@ import (
 // add CraeteCertChain to follow recommended flow and return both byte arrays and parsed tls server/client certs
 // update example to use new CraeteCertChain function
 
-// CreateCACert creates a self-signed CA certificate.
-// The created certificate can be used for signing intermediate CA certificates and CRLs.
+// CraeteCertChain generates an entire certificate chain with the following hierarchy:
+// Root CA -> Intermediate CA -> Server Certificate & Client Certificate
+func CraeteCertChain() {
+
+}
+
+// GenCACert generates a CA certificate.
+// If signingCert and signingKey are not provided, the certificate is created as a self-signed root CA.
+// If signingCert and signingKey are provided, the certificate is created as an intermediate CA, signed with provided certificate.
+// The generated certificate can only be used for signing other certificates and CRLs.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
-func CreateCACert(subject pkix.Name, validFor time.Duration, keyLength int) (cert, key []byte, err error) {
+func GenCACert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
 	c, p, err := createBaseCert(subject, validFor, keyLength)
 	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
 	c.IsCA = true
