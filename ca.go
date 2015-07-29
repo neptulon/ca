@@ -24,13 +24,15 @@ import (
 	"time"
 )
 
-// todo modify CreateCACert to accept certs (for intermediate CAs) or null for self-signed root CA
-// add CraeteCertChain to follow recommended flow and return both byte arrays and parsed tls server/client certs
-// update example to use new CraeteCertChain function
-
-// CraeteCertChain generates an entire certificate chain with the following hierarchy:
+// GenCertChain generates an entire certificate chain with the following hierarchy:
 // Root CA -> Intermediate CA -> Server Certificate & Client Certificate
-func CraeteCertChain() {
+//
+// name = Certificate name. i.e. FooBar
+// host = Comma-separated hostnames and IPs to generate the server certificate for. i.e. "localhost,127.0.0.1"
+//
+// The returned slices are the PEM encoded X.509 certificate and private key pairs,
+// along with the read to use tls.Config objects for the server and the client.
+func GenCertChain(name, host string, validFor time.Duration, keyLength int) {
 
 }
 
@@ -40,27 +42,19 @@ func CraeteCertChain() {
 // The generated certificate can only be used for signing other certificates and CRLs.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
 func GenCACert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
-	c, p, err := createBaseCert(subject, validFor, keyLength)
-	c.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
-	c.IsCA = true
-
-	cert, key, err = signAndEncodeCert(c, p, c, p)
-	return
-}
-
-// CreateIntermediateCACert creates an intermediate CA certificate for signing server or client certificates and CRLs.
-// The returned slices are the PEM encoded X.509 certificate and private key pair.
-func CreateIntermediateCACert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
 	var (
 		sc, c *x509.Certificate
 		sk, k *rsa.PrivateKey
 	)
 
-	if sc, sk, err = parseCertAndKey(signingCert, signingKey); err != nil {
+	if c, k, err = createBaseCert(subject, validFor, keyLength); err != nil {
 		return
 	}
 
-	if c, k, err = createBaseCert(subject, validFor, keyLength); err != nil {
+	if signingCert == nil || signingKey == nil {
+		sc = c
+		sk = k
+	} else if sc, sk, err = parseCertAndKey(signingCert, signingKey); err != nil {
 		return
 	}
 
@@ -72,6 +66,7 @@ func CreateIntermediateCACert(subject pkix.Name, validFor time.Duration, keyLeng
 }
 
 // CreateServerCert creates a hosting certificate for servers using TLS.
+// host = Comma-separated hostnames and IPs to generate a certificate for. i.e. "localhost,127.0.0.1"
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
 func CreateServerCert(subject pkix.Name, host string, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
 	var (
