@@ -9,7 +9,6 @@ import (
 func TestCreateCertChain(t *testing.T) {
 	// create an entire certificate chain
 	caCert, caKey, err := CreateCACert(pkix.Name{
-		Country:            []string{"SE"},
 		Organization:       []string{"FooBar"},
 		OrganizationalUnit: []string{"FooBar Certificate Authority"},
 		CommonName:         "FooBar Root CA",
@@ -20,7 +19,6 @@ func TestCreateCertChain(t *testing.T) {
 	}
 
 	signingCert, signingKey, err := CreateSigningCert(pkix.Name{
-		Country:            []string{"SE"},
 		Organization:       []string{"FooBar"},
 		OrganizationalUnit: []string{"FooBar Intermediate Certificate Authority"},
 		CommonName:         "FooBar Intermadiate CA",
@@ -31,7 +29,6 @@ func TestCreateCertChain(t *testing.T) {
 	}
 
 	svrCert, svrKey, err := CreateServerCert(pkix.Name{
-		Country:      []string{"SE"},
 		Organization: []string{"FooBar"},
 		CommonName:   "127.0.0.1",
 	}, "127.0.0.1", time.Hour, 512, signingCert, signingKey)
@@ -41,7 +38,6 @@ func TestCreateCertChain(t *testing.T) {
 	}
 
 	clientCert, clientKey, err := CreateClientCert(pkix.Name{
-		Country:      []string{"SE"},
 		Organization: []string{"FooBar"},
 		CommonName:   "chuck.norris",
 	}, time.Hour, 512, signingCert, signingKey)
