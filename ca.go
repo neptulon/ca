@@ -24,8 +24,12 @@ import (
 	"time"
 )
 
+// todo modify CreateCACert to accept certs (for intermediate CAs) or null for self-signed root CA
+// add CraeteCertChain to follow recommended flow and return both byte arrays and parsed tls server/client certs
+// update example to use new CraeteCertChain function
+
 // CreateCACert creates a self-signed CA certificate.
-// The created certificate can be used for signing other certificates and CRLs.
+// The created certificate can be used for signing intermediate CA certificates and CRLs.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
 func CreateCACert(subject pkix.Name, validFor time.Duration, keyLength int) (cert, key []byte, err error) {
 	c, p, err := createBaseCert(subject, validFor, keyLength)
@@ -36,9 +40,9 @@ func CreateCACert(subject pkix.Name, validFor time.Duration, keyLength int) (cer
 	return
 }
 
-// CreateSigningCert creates an intermediate signing certificate for signing server or client certificates.
+// CreateIntermediateCACert creates an intermediate CA certificate for signing server or client certificates and CRLs.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
-func CreateSigningCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
+func CreateIntermediateCACert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
 	var (
 		sc, c *x509.Certificate
 		sk, k *rsa.PrivateKey
@@ -77,6 +81,7 @@ func CreateServerCert(subject pkix.Name, host string, validFor time.Duration, ke
 
 	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
 	c.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
+	c.IsCA = false
 	setHosts(host, c)
 
 	cert, key, err = signAndEncodeCert(sc, sk, c, k)
@@ -102,6 +107,7 @@ func CreateClientCert(subject pkix.Name, validFor time.Duration, keyLength int, 
 
 	c.KeyUsage = x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
 	c.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
+	c.IsCA = false
 
 	cert, key, err = signAndEncodeCert(sc, sk, c, k)
 	return
