@@ -29,11 +29,55 @@ import (
 //
 // name = Certificate name. i.e. FooBar
 // host = Comma-separated hostnames and IPs to generate the server certificate for. i.e. "localhost,127.0.0.1"
+// hostName = Server host address. i.e. foobar.com
 //
 // The returned slices are the PEM encoded X.509 certificate and private key pairs,
 // along with the read to use tls.Config objects for the server and the client.
-func GenCertChain(name, host string, validFor time.Duration, keyLength int) {
+func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength int) (
+	caCert,
+	caKey,
+	intCACert,
+	intCAKey,
+	serverCert,
+	serverKey,
+	clientCert,
+	clientKey []byte,
+	err error) {
+	caCert, caKey, err = GenCACert(pkix.Name{
+		Organization:       []string{name},
+		OrganizationalUnit: []string{name + " Certificate Authority"},
+		CommonName:         name + " Root CA",
+	}, time.Hour, keyLength, nil, nil)
 
+	if err != nil {
+		return
+	}
+
+	intCACert, intCAKey, err = GenCACert(pkix.Name{
+		Organization:       []string{name},
+		OrganizationalUnit: []string{name + " Intermediate Certificate Authority"},
+		CommonName:         name + " Intermadiate CA",
+	}, time.Hour, keyLength, caCert, caKey)
+
+	if err != nil {
+		return
+	}
+
+	serverCert, serverKey, err = GenServerCert(pkix.Name{
+		Organization: []string{name},
+		CommonName:   hostName,
+	}, host, time.Hour, keyLength, intCACert, intCAKey)
+
+	if err != nil {
+		return
+	}
+
+	clientCert, clientKey, err = GenClientCert(pkix.Name{
+		Organization: []string{name},
+		CommonName:   name,
+	}, time.Hour, keyLength, intCACert, intCAKey)
+
+	return
 }
 
 // GenCACert generates a CA certificate.
@@ -65,10 +109,10 @@ func GenCACert(subject pkix.Name, validFor time.Duration, keyLength int, signing
 	return
 }
 
-// CreateServerCert creates a hosting certificate for servers using TLS.
+// GenServerCert generates a hosting certificate for TLS servers.
 // host = Comma-separated hostnames and IPs to generate a certificate for. i.e. "localhost,127.0.0.1"
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
-func CreateServerCert(subject pkix.Name, host string, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
+func GenServerCert(subject pkix.Name, host string, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
 	var (
 		sc, c *x509.Certificate
 		sk, k *rsa.PrivateKey
@@ -91,10 +135,10 @@ func CreateServerCert(subject pkix.Name, host string, validFor time.Duration, ke
 	return
 }
 
-// CreateClientCert creates a client certificate.
-// Created certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
+// GenClientCert generates a client certificate.
+// The generated certificate will have its extended key usage set to 'client authentication' and will be ready for use in TLS client authentication.
 // The returned slices are the PEM encoded X.509 certificate and private key pair.
-func CreateClientCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
+func GenClientCert(subject pkix.Name, validFor time.Duration, keyLength int, signingCert, signingKey []byte) (cert, key []byte, err error) {
 	var (
 		sc, c *x509.Certificate
 		sk, k *rsa.PrivateKey
