@@ -14,6 +14,7 @@ package ca
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -42,33 +43,31 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 	serverKey,
 	clientCert,
 	clientKey []byte,
+	serverConf,
+	clientConf *tls.Config,
 	err error) {
-	caCert, caKey, err = GenCACert(pkix.Name{
+
+	// create certificate chain
+	if caCert, caKey, err = GenCACert(pkix.Name{
 		Organization:       []string{name},
 		OrganizationalUnit: []string{name + " Certificate Authority"},
 		CommonName:         name + " Root CA",
-	}, time.Hour, keyLength, nil, nil)
-
-	if err != nil {
+	}, time.Hour, keyLength, nil, nil); err != nil {
 		return
 	}
 
-	intCACert, intCAKey, err = GenCACert(pkix.Name{
+	if intCACert, intCAKey, err = GenCACert(pkix.Name{
 		Organization:       []string{name},
 		OrganizationalUnit: []string{name + " Intermediate Certificate Authority"},
 		CommonName:         name + " Intermadiate CA",
-	}, time.Hour, keyLength, caCert, caKey)
-
-	if err != nil {
+	}, time.Hour, keyLength, caCert, caKey); err != nil {
 		return
 	}
 
-	serverCert, serverKey, err = GenServerCert(pkix.Name{
+	if serverCert, serverKey, err = GenServerCert(pkix.Name{
 		Organization: []string{name},
 		CommonName:   hostName,
-	}, host, time.Hour, keyLength, intCACert, intCAKey)
-
-	if err != nil {
+	}, host, time.Hour, keyLength, intCACert, intCAKey); err != nil {
 		return
 	}
 
@@ -76,6 +75,17 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 		Organization: []string{name},
 		CommonName:   name,
 	}, time.Hour, keyLength, intCACert, intCAKey)
+
+	// crate tls.Config objects
+	tlsCert, err := tls.X509KeyPair(serverCert, serverKey)
+	pool := x509.NewCertPool()
+	_ = pool.AppendCertsFromPEM(intCACert)
+
+	serverConf = &tls.Config{
+		Certificates: []tls.Certificate{tlsCert},
+		ClientCAs:    pool,
+		ClientAuth:   tls.VerifyClientCertIfGiven,
+	}
 
 	return
 }
