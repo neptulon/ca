@@ -25,6 +25,10 @@ import (
 	"time"
 )
 
+// todo: add CombineCertChain to create leaf / int CA / CA cert chain
+// and verify it with tls.X509KeyPair and x509.ParseCertificates.
+// This is meant to be used in GenCertChain function.
+
 // GenCertChain generates an entire certificate chain with the following hierarchy:
 // Root CA -> Intermediate CA -> Server Certificate & Client Certificate
 //
@@ -78,6 +82,8 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 
 	// crate tls.Config objects
 	tlsCert, err := tls.X509KeyPair(serverCert, serverKey)
+	tlsCert.Certificate = append(tlsCert.Certificate, intCACert, caCert)
+	tlsCert.Leaf, err = x509.ParseCertificate(serverCert)
 	pool := x509.NewCertPool()
 	_ = pool.AppendCertsFromPEM(intCACert)
 
