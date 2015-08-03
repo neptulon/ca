@@ -18,6 +18,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -76,17 +77,35 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 		CommonName:   name,
 	}, time.Hour, keyLength, intCACert, intCAKey)
 
-	// crate tls.Config objects
-	tlsCert, err := tls.X509KeyPair(serverCert, serverKey)
-	tlsCert.Certificate = append(tlsCert.Certificate, intCACert, caCert)
-	tlsCert.Leaf, err = x509.ParseCertificate(serverCert)
-	pool := x509.NewCertPool()
-	_ = pool.AppendCertsFromPEM(intCACert)
+	// crate server tls.Config object
+	serverTLSCert, err := tls.X509KeyPair(serverCert, serverKey)
+	serverTLSCert.Certificate = append(serverTLSCert.Certificate, intCACert, caCert)
+	serverTLSCert.Leaf, err = x509.ParseCertificate(serverCert)
+	clientCACertPool := x509.NewCertPool()
+	if !clientCACertPool.AppendCertsFromPEM(intCACert) {
+		err = errors.New("Failed to parse the newly created intermediate CA certificate.")
+		return
+	}
 
 	serverConf = &tls.Config{
-		Certificates: []tls.Certificate{tlsCert},
-		ClientCAs:    pool,
-		ClientAuth:   tls.VerifyClientCertIfGiven,
+		Certificates: []tls.Certificate{serverTLSCert},
+		ClientCAs:    clientCACertPool,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+	}
+
+	// create client tls.Config object
+	clientTLSCert, err := tls.X509KeyPair(clientCert, clientKey)
+	clientTLSCert.Certificate = append(clientTLSCert.Certificate, intCACert, caCert)
+	clientTLSCert.Leaf, err = x509.ParseCertificate(clientCert)
+	rootCACertPool := x509.NewCertPool()
+	if !rootCACertPool.AppendCertsFromPEM(intCACert) {
+		err = errors.New("Failed to parse the newly created intermediate CA certificate.")
+		return
+	}
+
+	clientConf = &tls.Config{
+		Certificates: []tls.Certificate{clientTLSCert},
+		RootCAs:      clientCACertPool,
 	}
 
 	return
@@ -172,9 +191,8 @@ func GenClientCert(subject pkix.Name, validFor time.Duration, keyLength int, sig
 	return
 }
 
-// ExportCertChain takes individual certificates in a certificate chain and produces
-// a single certificate chain file. Input certificates should be in the order of
-// leaf to root CA.
+// ExportCertChain takes individual PEM encoded X.509 certificates in a trust chain and produces a single certificate chain file.
+// Input certificates should start with leaf certificate and end with the root CA certificate. i.e. [0] Leaf, [1] Intermediate CA, [2] Root CA
 func ExportCertChain(certs []byte) ([]byte, error) {
 	return nil, nil
 }

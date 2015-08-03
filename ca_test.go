@@ -1,50 +1,12 @@
 package ca
 
 import (
-	"crypto/x509/pkix"
 	"testing"
 	"time"
 )
 
 func TestCreateCertChain(t *testing.T) {
-	// create an entire certificate chain
-	caCert, caKey, err := CreateCACert(pkix.Name{
-		Organization:       []string{"FooBar"},
-		OrganizationalUnit: []string{"FooBar Certificate Authority"},
-		CommonName:         "FooBar Root CA",
-	}, time.Hour, 512)
-
-	if caCert == nil || caKey == nil || err != nil {
-		t.Fatal("Failed to created CA cert", err)
-	}
-
-	signingCert, signingKey, err := CreateSigningCert(pkix.Name{
-		Organization:       []string{"FooBar"},
-		OrganizationalUnit: []string{"FooBar Intermediate Certificate Authority"},
-		CommonName:         "FooBar Intermadiate CA",
-	}, time.Hour, 512, caCert, caKey)
-
-	if signingCert == nil || signingKey == nil || err != nil {
-		t.Fatal("Failed to created signing cert", err)
-	}
-
-	svrCert, svrKey, err := CreateServerCert(pkix.Name{
-		Organization: []string{"FooBar"},
-		CommonName:   "127.0.0.1",
-	}, "127.0.0.1", time.Hour, 512, signingCert, signingKey)
-
-	if svrCert == nil || svrKey == nil || err != nil {
-		t.Fatal("Failed to created server cert", err)
-	}
-
-	clientCert, clientKey, err := CreateClientCert(pkix.Name{
-		Organization: []string{"FooBar"},
-		CommonName:   "chuck.norris",
-	}, time.Hour, 512, signingCert, signingKey)
-
-	if clientCert == nil || clientKey == nil || err != nil {
-		t.Fatal("Failed to created client cert", err)
-	}
+	GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
 
 	// // create a TLS listener
 	// svrTLSCert, err := tls.X509KeyPair(svrCert, svrKey)
