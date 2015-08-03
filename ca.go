@@ -25,10 +25,6 @@ import (
 	"time"
 )
 
-// todo: add CombineCertChain to create leaf / int CA / CA cert chain
-// and verify it with tls.X509KeyPair and x509.ParseCertificates.
-// This is meant to be used in GenCertChain function.
-
 // GenCertChain generates an entire certificate chain with the following hierarchy:
 // Root CA -> Intermediate CA -> Server Certificate & Client Certificate
 //
@@ -174,6 +170,13 @@ func GenClientCert(subject pkix.Name, validFor time.Duration, keyLength int, sig
 
 	cert, key, err = signAndEncodeCert(sc, sk, c, k)
 	return
+}
+
+// ExportCertChain takes individual certificates in a certificate chain and produces
+// a single certificate chain file. Input certificates should be in the order of
+// leaf to root CA.
+func ExportCertChain(certs []byte) ([]byte, error) {
+	return nil, nil
 }
 
 // createBaseCert creates and returns x509.Certificate (unsigned) and rsa.PrivateKey objects with basic paramters set.
