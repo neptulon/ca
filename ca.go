@@ -36,8 +36,8 @@ import (
 // The returned slices are the PEM encoded X.509 certificate and private key pairs,
 // along with the read to use tls.Config objects for the server and the client.
 func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength int) (
-	caCert,
-	caKey,
+	rootCACert,
+	rootCAKey,
 	intCACert,
 	intCAKey,
 	serverCert,
@@ -49,7 +49,7 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 	err error) {
 
 	// create certificate chain
-	if caCert, caKey, err = GenCACert(pkix.Name{
+	if rootCACert, rootCAKey, err = GenCACert(pkix.Name{
 		Organization:       []string{name},
 		OrganizationalUnit: []string{name + " Certificate Authority"},
 		CommonName:         name + " Root CA",
@@ -61,7 +61,7 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 		Organization:       []string{name},
 		OrganizationalUnit: []string{name + " Intermediate Certificate Authority"},
 		CommonName:         name + " Intermadiate CA",
-	}, time.Hour, keyLength, caCert, caKey); err != nil {
+	}, time.Hour, keyLength, rootCACert, rootCAKey); err != nil {
 		return
 	}
 
@@ -79,7 +79,7 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 
 	// crate server tls.Config object
 	serverTLSCert, err := tls.X509KeyPair(serverCert, serverKey)
-	serverTLSCert.Certificate = append(serverTLSCert.Certificate, intCACert, caCert)
+	serverTLSCert.Certificate = append(serverTLSCert.Certificate, intCACert, rootCACert)
 	serverTLSCert.Leaf, err = x509.ParseCertificate(serverCert)
 	clientCACertPool := x509.NewCertPool()
 	if !clientCACertPool.AppendCertsFromPEM(intCACert) {
@@ -95,7 +95,7 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 
 	// create client tls.Config object
 	clientTLSCert, err := tls.X509KeyPair(clientCert, clientKey)
-	clientTLSCert.Certificate = append(clientTLSCert.Certificate, intCACert, caCert)
+	clientTLSCert.Certificate = append(clientTLSCert.Certificate, intCACert, rootCACert)
 	clientTLSCert.Leaf, err = x509.ParseCertificate(clientCert)
 	rootCACertPool := x509.NewCertPool()
 	if !rootCACertPool.AppendCertsFromPEM(intCACert) {
