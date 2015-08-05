@@ -56,6 +56,7 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 		OrganizationalUnit: []string{name + " Certificate Authority"},
 		CommonName:         name + " Root CA",
 	}, time.Hour, keyLength, nil, nil); err != nil {
+		err = fmt.Errorf("Failed to create root CA certificate: %v", err)
 		return
 	}
 
@@ -64,6 +65,7 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 		OrganizationalUnit: []string{name + " Intermediate Certificate Authority"},
 		CommonName:         name + " Intermadiate CA",
 	}, time.Hour, keyLength, c.RootCACert, c.RootCAKey); err != nil {
+		err = fmt.Errorf("Failed to create intermediate CA certificate: %v", err)
 		return
 	}
 
@@ -71,18 +73,31 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 		Organization: []string{name},
 		CommonName:   hostName,
 	}, host, time.Hour, keyLength, c.IntCACert, c.IntCAKey); err != nil {
+		err = fmt.Errorf("Failed to create server certificate: %v", err)
 		return
 	}
 
-	c.ClientCert, c.ClientKey, err = GenClientCert(pkix.Name{
+	if c.ClientCert, c.ClientKey, err = GenClientCert(pkix.Name{
 		Organization: []string{name},
 		CommonName:   name,
-	}, time.Hour, keyLength, c.IntCACert, c.IntCAKey)
+	}, time.Hour, keyLength, c.IntCACert, c.IntCAKey); err != nil {
+		err = fmt.Errorf("Failed to create client certificate: %v", err)
+		return
+	}
 
 	// crate server tls.Config object
-	serverTLSCert, err := tls.X509KeyPair(c.ServerCert, c.ServerKey)
-	serverTLSCert.Certificate = append(serverTLSCert.Certificate, c.IntCACert, c.RootCACert)
-	serverTLSCert.Leaf, err = x509.ParseCertificate(c.ServerCert)
+	serverTLSCert, e := tls.X509KeyPair(c.ServerCert, c.ServerKey)
+	if e != nil {
+		err = fmt.Errorf("Failed to parse the newly created server certificate or the key: %v", e)
+		return
+	}
+
+	// serverTLSCert.Certificate = append(serverTLSCert.Certificate, c.IntCACert, c.RootCACert)
+	// if serverTLSCert.Leaf, err = x509.ParseCertificate(c.ServerCert); err != nil {
+	// 	err = fmt.Errorf("Failed to parse the newly created server certificate: %v", err)
+	// 	return
+	// }
+
 	clientCACertPool := x509.NewCertPool()
 	if !clientCACertPool.AppendCertsFromPEM(c.IntCACert) {
 		err = errors.New("Failed to parse the newly created intermediate CA certificate.")
@@ -96,9 +111,18 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 	}
 
 	// create client tls.Config object
-	clientTLSCert, err := tls.X509KeyPair(c.ClientCert, c.ClientKey)
-	clientTLSCert.Certificate = append(clientTLSCert.Certificate, c.IntCACert, c.RootCACert)
-	clientTLSCert.Leaf, err = x509.ParseCertificate(c.ClientCert)
+	clientTLSCert, e := tls.X509KeyPair(c.ClientCert, c.ClientKey)
+	if e != nil {
+		err = fmt.Errorf("Failed to parse the newly created client certificate or the key: %v", e)
+		return
+	}
+
+	// clientTLSCert.Certificate = append(clientTLSCert.Certificate, c.IntCACert, c.RootCACert)
+	// if clientTLSCert.Leaf, err = x509.ParseCertificate(c.ClientCert); err != nil {
+	// 	err = fmt.Errorf("Failed to parse the newly created client certificate: %v", err)
+	// 	return
+	// }
+
 	rootCACertPool := x509.NewCertPool()
 	if !rootCACertPool.AppendCertsFromPEM(c.IntCACert) {
 		err = errors.New("Failed to parse the newly created intermediate CA certificate.")
