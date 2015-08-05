@@ -26,30 +26,32 @@ import (
 	"time"
 )
 
+// CertChain is a ready to use certificate chain object, created by GenCertChain function.
+// Byte slices are the PEM encoded X.509 certificate and private key pairs.
+// ServerTLSConf/ClientTLSConf are tead to use tls.Config objects for a TLS server and client.
+type CertChain struct {
+	RootCACert,
+	RootCAKey,
+	IntCACert,
+	IntCAKey,
+	ServerCert,
+	ServerKey,
+	ClientCert,
+	ClientKey []byte
+	ServerTLSConf,
+	ClientTLSConf *tls.Config
+}
+
 // GenCertChain generates an entire certificate chain with the following hierarchy:
 // Root CA -> Intermediate CA -> Server Certificate & Client Certificate
 //
 // name = Certificate name. i.e. FooBar
 // host = Comma-separated hostnames and IPs to generate the server certificate for. i.e. "localhost,127.0.0.1"
 // hostName = Server host address. i.e. foobar.com
-//
-// The returned slices are the PEM encoded X.509 certificate and private key pairs,
-// along with the read to use tls.Config objects for the server and the client.
-func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength int) (
-	rootCACert,
-	rootCAKey,
-	intCACert,
-	intCAKey,
-	serverCert,
-	serverKey,
-	clientCert,
-	clientKey []byte,
-	serverConf,
-	clientConf *tls.Config,
-	err error) {
+func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength int) (c CertChain, err error) {
 
 	// create certificate chain
-	if rootCACert, rootCAKey, err = GenCACert(pkix.Name{
+	if c.RootCACert, c.RootCAKey, err = GenCACert(pkix.Name{
 		Organization:       []string{name},
 		OrganizationalUnit: []string{name + " Certificate Authority"},
 		CommonName:         name + " Root CA",
@@ -57,53 +59,53 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 		return
 	}
 
-	if intCACert, intCAKey, err = GenCACert(pkix.Name{
+	if c.IntCACert, c.IntCAKey, err = GenCACert(pkix.Name{
 		Organization:       []string{name},
 		OrganizationalUnit: []string{name + " Intermediate Certificate Authority"},
 		CommonName:         name + " Intermadiate CA",
-	}, time.Hour, keyLength, rootCACert, rootCAKey); err != nil {
+	}, time.Hour, keyLength, c.RootCACert, c.RootCAKey); err != nil {
 		return
 	}
 
-	if serverCert, serverKey, err = GenServerCert(pkix.Name{
+	if c.ServerCert, c.ServerKey, err = GenServerCert(pkix.Name{
 		Organization: []string{name},
 		CommonName:   hostName,
-	}, host, time.Hour, keyLength, intCACert, intCAKey); err != nil {
+	}, host, time.Hour, keyLength, c.IntCACert, c.IntCAKey); err != nil {
 		return
 	}
 
-	clientCert, clientKey, err = GenClientCert(pkix.Name{
+	c.ClientCert, c.ClientKey, err = GenClientCert(pkix.Name{
 		Organization: []string{name},
 		CommonName:   name,
-	}, time.Hour, keyLength, intCACert, intCAKey)
+	}, time.Hour, keyLength, c.IntCACert, c.IntCAKey)
 
 	// crate server tls.Config object
-	serverTLSCert, err := tls.X509KeyPair(serverCert, serverKey)
-	serverTLSCert.Certificate = append(serverTLSCert.Certificate, intCACert, rootCACert)
-	serverTLSCert.Leaf, err = x509.ParseCertificate(serverCert)
+	serverTLSCert, err := tls.X509KeyPair(c.ServerCert, c.ServerKey)
+	serverTLSCert.Certificate = append(serverTLSCert.Certificate, c.IntCACert, c.RootCACert)
+	serverTLSCert.Leaf, err = x509.ParseCertificate(c.ServerCert)
 	clientCACertPool := x509.NewCertPool()
-	if !clientCACertPool.AppendCertsFromPEM(intCACert) {
+	if !clientCACertPool.AppendCertsFromPEM(c.IntCACert) {
 		err = errors.New("Failed to parse the newly created intermediate CA certificate.")
 		return
 	}
 
-	serverConf = &tls.Config{
+	c.ServerTLSConf = &tls.Config{
 		Certificates: []tls.Certificate{serverTLSCert},
 		ClientCAs:    clientCACertPool,
 		ClientAuth:   tls.RequireAndVerifyClientCert,
 	}
 
 	// create client tls.Config object
-	clientTLSCert, err := tls.X509KeyPair(clientCert, clientKey)
-	clientTLSCert.Certificate = append(clientTLSCert.Certificate, intCACert, rootCACert)
-	clientTLSCert.Leaf, err = x509.ParseCertificate(clientCert)
+	clientTLSCert, err := tls.X509KeyPair(c.ClientCert, c.ClientKey)
+	clientTLSCert.Certificate = append(clientTLSCert.Certificate, c.IntCACert, c.RootCACert)
+	clientTLSCert.Leaf, err = x509.ParseCertificate(c.ClientCert)
 	rootCACertPool := x509.NewCertPool()
-	if !rootCACertPool.AppendCertsFromPEM(intCACert) {
+	if !rootCACertPool.AppendCertsFromPEM(c.IntCACert) {
 		err = errors.New("Failed to parse the newly created intermediate CA certificate.")
 		return
 	}
 
-	clientConf = &tls.Config{
+	c.ClientTLSConf = &tls.Config{
 		Certificates: []tls.Certificate{clientTLSCert},
 		RootCAs:      clientCACertPool,
 	}

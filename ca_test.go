@@ -1,60 +1,41 @@
 package ca
 
 import (
+	"crypto/tls"
 	"testing"
 	"time"
 )
 
 func TestCreateCertChain(t *testing.T) {
-	GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
+	certChain, err := GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	// // create a TLS listener
-	// svrTLSCert, err := tls.X509KeyPair(svrCert, svrKey)
-	// clientCAs := x509.NewCertPool()
-	// ok := clientCAs.AppendCertsFromPEM(signingCert)
-	// if err != nil || !ok {
-	// 	t.Fatalf("Failed to parse the server certificate or the private key: %v", err)
-	// }
-	//
-	// svrConf := tls.Config{
-	// 	Certificates: []tls.Certificate{svrTLSCert},
-	// 	ClientCAs:    clientCAs,
-	// 	ClientAuth:   tls.VerifyClientCertIfGiven,
-	// }
-	//
-	// laddr := "127.0.0.1:3000"
-	// l, err := tls.Listen("tcp", laddr, &svrConf)
-	// if err != nil {
-	// 	t.Fatalf("Failed to create TLS listener on network address %v with error: %v", laddr, err)
-	// }
-	//
-	// go func() {
-	// 	_, err := l.Accept()
-	// 	if err != nil {
-	// 		t.Fatal("Errored while accepting new connection on listener:", err)
-	// 	}
-	// }()
-	//
-	// time.Sleep(time.Second)
-	//
-	// // connect to previously created TLS listener
-	// clientTLSCert, err := tls.X509KeyPair(clientCert, clientKey)
-	// if err != nil {
-	// 	t.Fatalf("Failed to parse the client certificate or the private key: %v", err)
-	// }
-	//
-	// clientConf := tls.Config{
-	// 	RootCAs:      clientCAs,
-	// 	Certificates: []tls.Certificate{clientTLSCert},
-	// }
-	//
-	// conn, err := tls.Dial("tcp", laddr, &clientConf)
-	// if err != nil {
-	// 	t.Fatal("Failed to open connection to listener with error:", err)
-	// }
-	//
-	// conn.Close()
-	// l.Close()
+	// create a TLS listener
+	laddr := "127.0.0.1:3000"
+	l, err := tls.Listen("tcp", laddr, certChain.ServerTLSConf)
+	if err != nil {
+		t.Fatalf("Failed to create TLS listener on network address %v with error: %v", laddr, err)
+	}
+
+	go func() {
+		_, err := l.Accept()
+		if err != nil {
+			t.Fatal("Errored while accepting new connection on listener:", err)
+		}
+	}()
+
+	time.Sleep(time.Second)
+
+	// connect to previously created TLS listener
+	conn, err := tls.Dial("tcp", laddr, certChain.ClientTLSConf)
+	if err != nil {
+		t.Fatal("Failed to open connection to listener with error:", err)
+	}
+
+	conn.Close()
+	l.Close()
 }
 
 // func TestGenCert(t *testing.T) {
