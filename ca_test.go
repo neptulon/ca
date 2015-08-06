@@ -13,26 +13,43 @@ func TestCreateCertChain(t *testing.T) {
 	}
 
 	// create a TLS listener
-	laddr := "127.0.0.1:3000"
+	laddr := "127.0.0.1:3419"
 	l, err := tls.Listen("tcp", laddr, certChain.ServerTLSConf)
 	if err != nil {
 		t.Fatalf("Failed to create TLS listener on network address %v with error: %v", laddr, err)
 	}
 
 	go func() {
-		_, err := l.Accept()
+		c, err := l.Accept()
 		if err != nil {
 			t.Fatal("Errored while accepting new connection on listener:", err)
 		}
+
+		h := make([]byte, 5)
+		n, err := c.Read(h)
+		if n != 5 {
+			t.Fatal("Read wrong number of bytes from the listener.")
+		}
 	}()
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Millisecond * 100)
 
 	// connect to previously created TLS listener
 	conn, err := tls.Dial("tcp", laddr, certChain.ClientTLSConf)
 	if err != nil {
 		t.Fatal("Failed to open connection to listener with error:", err)
 	}
+
+	w := make([]byte, 5)
+	n, err := conn.Write(w)
+	if err != nil {
+		t.Fatal("Failed to write to the connection with error:", err)
+	}
+	if n != 5 {
+		t.Fatal("Wrote wrong number of bytes to the connection.")
+	}
+
+	time.Sleep(time.Millisecond * 100)
 
 	conn.Close()
 	l.Close()
