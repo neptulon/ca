@@ -7,6 +7,8 @@ import (
 )
 
 func TestCreateCertChain(t *testing.T) {
+	// declare result/state channel and read from it periodically to verify that listener is at desired stated (rather than sleeps)
+
 	certChain, err := GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
 	if err != nil {
 		t.Fatal(err)
@@ -29,6 +31,10 @@ func TestCreateCertChain(t *testing.T) {
 		n, err := c.Read(h)
 		if n != 5 {
 			t.Fatal("Read wrong number of bytes from the listener.")
+		}
+
+		if c.(*tls.Conn).ConnectionState().PeerCertificates[0].Subject.CommonName != "FooBar" {
+			t.Fatal("Client authentication failed.")
 		}
 	}()
 
