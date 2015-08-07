@@ -2,12 +2,15 @@ package ca
 
 import (
 	"crypto/tls"
+	"errors"
+	"fmt"
 	"testing"
 	"time"
 )
 
 func TestCreateCertChain(t *testing.T) {
-	// declare result/state channel and read from it periodically to verify that listener is at desired stated (rather than sleeps)
+	acceptCh := make(chan error)
+	readCh := make(chan error)
 
 	certChain, err := GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
 	if err != nil {
@@ -22,23 +25,30 @@ func TestCreateCertChain(t *testing.T) {
 	}
 
 	go func() {
+		acceptCh <- nil
 		c, err := l.Accept()
 		if err != nil {
-			t.Fatal("Errored while accepting new connection on listener:", err)
+			acceptCh <- fmt.Errorf("Errored while accepting new connection on listener: %v", err)
 		}
 
 		h := make([]byte, 5)
 		n, err := c.Read(h)
 		if n != 5 {
-			t.Fatal("Read wrong number of bytes from the listener.")
+			readCh <- errors.New("Read wrong number of bytes from the listener.")
 		}
 
 		if c.(*tls.Conn).ConnectionState().PeerCertificates[0].Subject.CommonName != "FooBar" {
-			t.Fatal("Client authentication failed.")
+			readCh <- errors.New("Client authentication failed.")
 		}
+
+		readCh <- nil
 	}()
 
-	time.Sleep(time.Millisecond * 100)
+	if err = <-acceptCh; err != nil {
+		t.Fatal(err)
+	}
+
+	time.Sleep(time.Millisecond * 10)
 
 	// connect to previously created TLS listener
 	conn, err := tls.Dial("tcp", laddr, certChain.ClientTLSConf)
@@ -55,7 +65,9 @@ func TestCreateCertChain(t *testing.T) {
 		t.Fatal("Wrote wrong number of bytes to the connection.")
 	}
 
-	time.Sleep(time.Millisecond * 100)
+	if err = <-readCh; err != nil {
+		t.Fatal(err)
+	}
 
 	conn.Close()
 	l.Close()
