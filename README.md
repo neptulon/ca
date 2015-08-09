@@ -40,4 +40,4 @@ func main() {
 }
 ```
 
-To see a more comprehensive example, check the godocs and the tests file (`TestCreateCertChain`).
+To see a more comprehensive example, check the godocs and the tests file (`TestCreateCertChain` function in specific).
