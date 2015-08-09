@@ -16,25 +16,16 @@ Example
 -------
 
 ```go
-// create CA and server certificates
-caCert, caKey, err = ca.CreateCACert(pkix.Name{
-	CommonName: "FooBar Root CA",
-}, time.Hour, 2048)
-
-svrCert, svrKey, err := CreateServerCert(pkix.Name{
-	Country:      []string{"SE"},
-	Organization: []string{"FooBar"},
-	CommonName:   "127.0.0.1",
-}, "127.0.0.1", time.Hour, 2048, caCert, caKey)
-
-// create a new TLS listener with created server certificate
-tlsCert, err := tls.X509KeyPair(svrCert, svrKey)
-
-conf := tls.Config{
-	Certificates: []tls.Certificate{tlsCert},
+// create CA and server certificates along with ready-to-use tls.Conf object that uses generated certs
+certChain, err := GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
+if err != nil {
+	log.Fatal(err)
 }
 
-l, err := tls.Listen("tcp", "localhost", &conf)
+l, err := tls.Listen("tcp", "127.0.0.1:4444", certChain.ServerTLSConf)
+if err != nil {
+	t.Fatalf("Failed to create TLS listener on network address 127.0.0.1:4444 with error: %v", err)
+}
 
-// todo: add 'err != nil' checks and start accepting connections on listener
+// todo: use l.Accept() to start accepting connections
 ```
