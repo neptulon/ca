@@ -16,15 +16,23 @@ Example
 -------
 
 ```go
+import (
+	"crypto/tls"
+	"log"
+	"time"
+
+	"github.com/nbusy/ca"
+)
+
 // create CA and server certificates along with ready-to-use tls.Conf object that uses generated certs
-certChain, err := GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
+certChain, err := ca.GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
 if err != nil {
 	log.Fatal(err)
 }
 
 l, err := tls.Listen("tcp", "127.0.0.1:4444", certChain.ServerTLSConf)
 if err != nil {
-	t.Fatalf("Failed to create TLS listener on network address 127.0.0.1:4444 with error: %v", err)
+	log.Fatal("Failed to create TLS listener on network address 127.0.0.1:4444 with error:", err)
 }
 
 // todo: use l.Accept() to start accepting connections
