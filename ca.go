@@ -92,11 +92,14 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 		return
 	}
 
+	// todo #1: I'm not use if current Go TLS implementation verifies the entire cert chain (doesn't seem like so) so below line might not be needed atm (also see todo #3 down below)
 	// serverTLSCert.Certificate = append(serverTLSCert.Certificate, c.IntCACert, c.RootCACert)
-	// if serverTLSCert.Leaf, err = x509.ParseCertificate(c.ServerCert); err != nil {
-	// 	err = fmt.Errorf("Failed to parse the newly created server certificate: %v", err)
-	// 	return
-	// }
+
+	sc, _ := pem.Decode(c.ServerCert)
+	if serverTLSCert.Leaf, err = x509.ParseCertificate(sc.Bytes); err != nil {
+		err = fmt.Errorf("Failed to parse the newly created server certificate: %v", err)
+		return
+	}
 
 	clientCACertPool := x509.NewCertPool()
 	if !clientCACertPool.AppendCertsFromPEM(c.IntCACert) {
@@ -117,11 +120,14 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 		return
 	}
 
+	// todo #1: (same as above)
 	// clientTLSCert.Certificate = append(clientTLSCert.Certificate, c.IntCACert, c.RootCACert)
-	// if clientTLSCert.Leaf, err = x509.ParseCertificate(c.ClientCert); err != nil {
-	// 	err = fmt.Errorf("Failed to parse the newly created client certificate: %v", err)
-	// 	return
-	// }
+
+	cc, _ := pem.Decode(c.ClientCert)
+	if clientTLSCert.Leaf, err = x509.ParseCertificate(cc.Bytes); err != nil {
+		err = fmt.Errorf("Failed to parse the newly created client certificate: %v", err)
+		return
+	}
 
 	rootCACertPool := x509.NewCertPool()
 	if !rootCACertPool.AppendCertsFromPEM(c.IntCACert) {
@@ -217,11 +223,12 @@ func GenClientCert(subject pkix.Name, validFor time.Duration, keyLength int, sig
 	return
 }
 
-// ExportCertChain takes individual PEM encoded X.509 certificates in a trust chain and produces a single certificate chain file.
-// Input certificates should start with leaf certificate and end with the root CA certificate. i.e. [0] Leaf, [1] Intermediate CA, [2] Root CA
-func ExportCertChain(certs []byte) ([]byte, error) {
-	return nil, nil
-}
+// todo #3: this might be only useful if todo #1 is necessary
+// // ExportCertChain takes individual PEM encoded X.509 certificates in a trust chain and produces a single certificate chain file.
+// // Input certificates should start with leaf certificate and end with the root CA certificate. i.e. [0] Leaf, [1] Intermediate CA, [2] Root CA
+// func ExportCertChain(certs []byte) ([]byte, error) {
+// 	return nil, nil
+// }
 
 // createBaseCert creates and returns x509.Certificate (unsigned) and rsa.PrivateKey objects with basic paramters set.
 func createBaseCert(subject pkix.Name, validFor time.Duration, keyLength int) (*x509.Certificate, *rsa.PrivateKey, error) {
