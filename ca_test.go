@@ -9,8 +9,8 @@ import (
 )
 
 func TestCreateCertChain(t *testing.T) {
-	acceptCh := make(chan error)
-	readCh := make(chan error)
+	acceptCh := make(chan error, 1)
+	readCh := make(chan error, 1)
 
 	certChain, err := GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
 	if err != nil {
@@ -44,11 +44,14 @@ func TestCreateCertChain(t *testing.T) {
 		readCh <- nil
 	}()
 
-	if err = <-acceptCh; err != nil {
-		t.Fatal(err)
+	select {
+	case err := <-acceptCh:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Listener accept timed out.")
 	}
-
-	time.Sleep(time.Millisecond * 10)
 
 	// connect to previously created TLS listener
 	conn, err := tls.Dial("tcp", laddr, certChain.ClientTLSConf)
@@ -65,8 +68,13 @@ func TestCreateCertChain(t *testing.T) {
 		t.Fatal("Wrote wrong number of bytes to the connection.")
 	}
 
-	if err = <-readCh; err != nil {
-		t.Fatal(err)
+	select {
+	case err := <-readCh:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Listener read timed out.")
 	}
 
 	conn.Close()
