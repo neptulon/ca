@@ -37,3 +37,5 @@ if err != nil {
 
 // todo: use l.Accept() to start accepting connections
 ```
+
+To see a more comprehensive example, check the godocs.
