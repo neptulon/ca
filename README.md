@@ -24,18 +24,20 @@ import (
 	"github.com/nbusy/ca"
 )
 
-// create CA and server certificates along with ready-to-use tls.Conf object that uses generated certs
-certChain, err := ca.GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
-if err != nil {
-	log.Fatal(err)
-}
+func main() {
+	// create CA and server certificates along with ready-to-use tls.Conf object that uses generated certs
+	certChain, err := ca.GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-l, err := tls.Listen("tcp", "127.0.0.1:4444", certChain.ServerTLSConf)
-if err != nil {
-	log.Fatal("Failed to create TLS listener on network address 127.0.0.1:4444 with error:", err)
-}
+	l, err := tls.Listen("tcp", "127.0.0.1:4444", certChain.ServerTLSConf)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-// todo: use l.Accept() to start accepting connections
+	// todo: use l.Accept() to start accepting connections
+}
 ```
 
 To see a more comprehensive example, check the godocs and the tests file (`TestCreateCertChain`).
