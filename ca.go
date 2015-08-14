@@ -55,7 +55,7 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 		Organization:       []string{name},
 		OrganizationalUnit: []string{name + " Certificate Authority"},
 		CommonName:         name + " Root CA",
-	}, time.Hour, keyLength, nil, nil); err != nil {
+	}, validFor, keyLength, nil, nil); err != nil {
 		err = fmt.Errorf("Failed to create root CA certificate: %v", err)
 		return
 	}
@@ -64,7 +64,7 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 		Organization:       []string{name},
 		OrganizationalUnit: []string{name + " Intermediate Certificate Authority"},
 		CommonName:         name + " Intermadiate CA",
-	}, time.Hour, keyLength, c.RootCACert, c.RootCAKey); err != nil {
+	}, validFor, keyLength, c.RootCACert, c.RootCAKey); err != nil {
 		err = fmt.Errorf("Failed to create intermediate CA certificate: %v", err)
 		return
 	}
@@ -72,7 +72,7 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 	if c.ServerCert, c.ServerKey, err = GenServerCert(pkix.Name{
 		Organization: []string{name},
 		CommonName:   hostName,
-	}, host, time.Hour, keyLength, c.IntCACert, c.IntCAKey); err != nil {
+	}, host, validFor, keyLength, c.IntCACert, c.IntCAKey); err != nil {
 		err = fmt.Errorf("Failed to create server certificate: %v", err)
 		return
 	}
@@ -80,7 +80,7 @@ func GenCertChain(name, host, hostName string, validFor time.Duration, keyLength
 	if c.ClientCert, c.ClientKey, err = GenClientCert(pkix.Name{
 		Organization: []string{name},
 		CommonName:   name,
-	}, time.Hour, keyLength, c.IntCACert, c.IntCAKey); err != nil {
+	}, validFor, keyLength, c.IntCACert, c.IntCAKey); err != nil {
 		err = fmt.Errorf("Failed to create client certificate: %v", err)
 		return
 	}
