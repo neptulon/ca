@@ -1,7 +1,7 @@
-Go CA
-=====
+# Go CA
 
-[![Build Status](https://travis-ci.org/nbusy/ca.svg?branch=master)](https://travis-ci.org/nbusy/ca) [![GoDoc](https://godoc.org/github.com/nbusy/ca?status.svg)](https://godoc.org/github.com/nbusy/ca)
+[![Build Status](https://travis-ci.org/nbusy/ca.svg?branch=master)](https://travis-ci.org/nbusy/ca)
+[![GoDoc](https://godoc.org/github.com/nbusy/ca?status.svg)](https://godoc.org/github.com/nbusy/ca)
 
 Go certificate authority library for creating:
 
@@ -12,8 +12,7 @@ Go certificate authority library for creating:
 
 This library is a lightweight wrapper around Go "crypto/x509" package with no external dependencies. This is done so to make it easy to copy-paste relevant functions into your project if you don't want to take a dependency on this package.
 
-Example
--------
+## Example
 
 ```go
 import (
@@ -41,3 +40,7 @@ func main() {
 ```
 
 To see a more comprehensive example, check the godocs and the tests file (`TestCreateCertChain` function in specific).
+
+## License
+
+[MIT](LICENSE)
