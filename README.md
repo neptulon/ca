@@ -1,7 +1,7 @@
 # Go CA
 
-[![Build Status](https://travis-ci.org/nbusy/ca.svg?branch=master)](https://travis-ci.org/nbusy/ca)
-[![GoDoc](https://godoc.org/github.com/nbusy/ca?status.svg)](https://godoc.org/github.com/nbusy/ca)
+[![Build Status](https://travis-ci.org/neptulon/ca.svg?branch=master)](https://travis-ci.org/neptulon/ca)
+[![GoDoc](https://godoc.org/github.com/neptulon/ca?status.svg)](https://godoc.org/github.com/neptulon/ca)
 
 Go certificate authority library for creating:
 
@@ -20,7 +20,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/nbusy/ca"
+	"github.com/neptulon/ca"
 )
 
 func main() {
