@@ -5,10 +5,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/nbusy/ca"
+	"github.com/neptulon/ca"
 )
 
-// Example demonstrating the use of nbusy/ca with a tls.Listener.
+// Example demonstrating the use of neptulon/ca with a tls.Listener.
 func Example() {
 	// create CA and server certificates along with ready-to-use tls.Conf object that uses generated certs
 	certChain, certErr := ca.GenCertChain("FooBar", "127.0.0.1", "127.0.0.1", time.Hour, 512)
